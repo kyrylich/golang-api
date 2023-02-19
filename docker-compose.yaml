@@ -1,0 +1,14 @@
+version: "3.0"
+
+services:
+  database:
+    image: mysql
+    ports:
+      - "3307:3306"
+    container_name: pet_database
+    restart: on-failure
+    environment:
+      MYSQL_DATABASE: main
+      MYSQL_USER: user
+      MYSQL_PASSWORD: secret
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
