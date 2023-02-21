@@ -2,11 +2,8 @@ package output
 
 import "time"
 
-type SignInUserOutput struct {
-	Token string `json:"token"`
-}
-
-type SignUpUserOutput struct {
+type UserOutput struct {
 	Username  string    `json:"username"`
 	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

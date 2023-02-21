@@ -3,9 +3,11 @@ package auth
 import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	"golangpet/internal/config"
 	"golangpet/internal/dto/input"
 	"golangpet/internal/dto/output"
 	"golangpet/internal/models"
+	"golangpet/internal/models/writer"
 	"golangpet/internal/security"
 	"net/http"
 	"time"
@@ -17,20 +19,27 @@ type Claims struct {
 }
 
 type AuthServiceInterface interface {
-	SignUp(input input.SignUpUserInput) (*models.User, *output.ErrorResponse)
-	SignIn(input input.SignInUserInput) (*output.SignInOutput, *output.ErrorResponse)
+	SignUp(input input.SignUpUserInput) (*output.SignUpUserOutput, *output.ErrorResponse)
+	SignIn(input input.SignInUserInput) (*output.SignInUserOutput, *output.ErrorResponse)
 }
 
 type AuthService struct {
-	passwordHasher security.PasswordHasher
-	// TODO: Add User Writer
+	passwordHasher security.PasswordHasherInterface
+	userWriter     writer.UserWriterInterface
 }
 
-func NewAuthService(passwordHasher security.PasswordHasher) AuthServiceInterface {
-	return &AuthService{passwordHasher: passwordHasher}
+func NewAuthService(passwordHasher security.PasswordHasherInterface, userWriter writer.UserWriterInterface) AuthServiceInterface {
+	if passwordHasher == nil {
+		passwordHasher = security.BcryptPasswordHasher{}
+	}
+	if userWriter == nil {
+		userWriter = writer.NewUserWriter(models.DB)
+	}
+
+	return &AuthService{passwordHasher: passwordHasher, userWriter: userWriter}
 }
 
-func (a *AuthService) SignIn(input input.SignInUserInput) (*output.SignInOutput, *output.ErrorResponse) {
+func (a *AuthService) SignIn(input input.SignInUserInput) (*output.SignInUserOutput, *output.ErrorResponse) {
 	user := &models.User{Username: input.Username}
 
 	models.DB.First(user, user)
@@ -49,17 +58,17 @@ func (a *AuthService) SignIn(input input.SignInUserInput) (*output.SignInOutput,
 		},
 	})
 
-	signedToken, err := token.SignedString([]byte("ThisIsOurSecret"))
+	signedToken, err := token.SignedString(config.GetSigningKey())
 	if err != nil {
 		errResponse := output.NewErrorResponse(http.StatusBadRequest)
 		errResponse.AddError("username", err.Error())
 		return nil, errResponse
 	}
 
-	return &output.SignInOutput{Token: signedToken}, nil
+	return &output.SignInUserOutput{Token: signedToken}, nil
 }
 
-func (a *AuthService) SignUp(input input.SignUpUserInput) (*models.User, *output.ErrorResponse) {
+func (a *AuthService) SignUp(input input.SignUpUserInput) (*output.SignUpUserOutput, *output.ErrorResponse) {
 	hashedPass, err := a.passwordHasher.Hash(input.Password)
 
 	errorResponse := output.NewErrorResponse(http.StatusBadRequest)
@@ -67,9 +76,9 @@ func (a *AuthService) SignUp(input input.SignUpUserInput) (*models.User, *output
 		errorResponse.AddError("", err.Error())
 		return nil, errorResponse
 	}
+	input.Password = hashedPass
 
-	user := models.User{Username: input.Username, Password: hashedPass}
-	db := models.DB.FirstOrCreate(&user, models.User{Username: input.Username})
+	userOutput, db := a.userWriter.Create(input)
 
 	if db.Error != nil {
 		errorResponse.Code = http.StatusInternalServerError
@@ -82,5 +91,5 @@ func (a *AuthService) SignUp(input input.SignUpUserInput) (*models.User, *output
 		return nil, errorResponse
 	}
 
-	return &user, nil
+	return &userOutput, nil
 }

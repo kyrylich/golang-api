@@ -1,12 +1,13 @@
-package rest
+package handlers
 
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"golangpet/internal/api/middlewares"
 	"golangpet/internal/dto/input"
 	"golangpet/internal/dto/output"
 	"golangpet/internal/models"
-	"golangpet/internal/security"
+	"golangpet/internal/models/reader"
 	"golangpet/internal/service/auth"
 	"golangpet/internal/translation"
 	"golangpet/internal/validation"
@@ -14,7 +15,7 @@ import (
 )
 
 func GetCurrentUser(c *gin.Context) {
-	username, ok := c.Get("CURRENT_USERNAME")
+	username, ok := c.Get(middlewares.GinContextCurrentUsername)
 	if !ok {
 		errResponse := output.NewErrorResponse(http.StatusNotFound)
 		errResponse.AddError("", "User associated with token not found")
@@ -22,17 +23,17 @@ func GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	user := &models.User{Username: fmt.Sprintf("%s", username)}
-	models.DB.First(user, user)
+	userReader := reader.NewUserReader(models.DB)
+	userOutput := userReader.GetByUsername(fmt.Sprintf("%s", username))
 
-	if user == nil {
+	if userOutput == nil {
 		errResponse := output.NewErrorResponse(http.StatusNotFound)
 		errResponse.AddError("", fmt.Sprintf("User with username `%s` not found", username))
 		c.AbortWithStatusJSON(http.StatusNotFound, errResponse)
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, userOutput)
 }
 
 func SignIn(c *gin.Context) {
@@ -43,8 +44,7 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	passwordHasher := security.BcryptPasswordHasher{}
-	var authService = auth.NewAuthService(passwordHasher)
+	var authService = auth.NewAuthService(nil, nil)
 
 	model, errorResponse := authService.SignIn(userInput)
 	if errorResponse != nil {
@@ -56,19 +56,13 @@ func SignIn(c *gin.Context) {
 }
 
 func SignUp(c *gin.Context) {
-	/* TODO:
-	   Provide tests
-	*/
-
-	passwordHasher := security.BcryptPasswordHasher{}
-	var authService = auth.NewAuthService(passwordHasher)
-
 	var userInput input.SignUpUserInput
 
 	if validationErr := c.ShouldBindJSON(&userInput); validationErr != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, validation.CreateValidationResponse(translation.Translator, validationErr))
 		return
 	}
+	var authService = auth.NewAuthService(nil, nil)
 
 	model, errorResponse := authService.SignUp(userInput)
 	if errorResponse != nil {

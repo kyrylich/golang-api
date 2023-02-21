@@ -1,12 +1,10 @@
 package auth
 
 import (
-	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	"golangpet/internal/app_errors"
 )
-
-var ERROR_INVALID_ACCESS_TOKEN = errors.New("invalid auth token")
 
 func ParseToken(accessToken string, signingKey []byte) (string, error) {
 	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
@@ -24,5 +22,5 @@ func ParseToken(accessToken string, signingKey []byte) (string, error) {
 		return claims.Username, nil
 	}
 
-	return "", ERROR_INVALID_ACCESS_TOKEN
+	return "", app_errors.ErrorInvalidAccessToken
 }

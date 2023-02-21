@@ -2,7 +2,7 @@ package security
 
 import "golang.org/x/crypto/bcrypt"
 
-type PasswordHasher interface {
+type PasswordHasherInterface interface {
 	Hash(password string) (string, error)
 	Verify(password, hash string) bool
 }
