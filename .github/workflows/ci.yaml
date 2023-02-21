@@ -3,7 +3,7 @@ name: Go package
 on: [push]
 
 jobs:
-  Build and Test:
+  Build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
