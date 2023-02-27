@@ -5,6 +5,7 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	"golangpet/internal/dto/output"
+	"net/http"
 )
 
 func CreateValidationResponse(translator ut.Translator, validationErr error) output.ErrorResponse {
@@ -15,7 +16,7 @@ func CreateValidationResponse(translator ut.Translator, validationErr error) out
 		for i, fe := range ve {
 			out[i] = output.ErrorMessage{Field: fe.Field(), Message: fe.Translate(translator)}
 		}
-		return output.ErrorResponse{Errors: out}
+		return output.ErrorResponse{Errors: out, Code: http.StatusBadRequest}
 	}
 
 	return output.ErrorResponse{}

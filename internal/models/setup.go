@@ -7,18 +7,20 @@ import (
 
 var DB *gorm.DB
 
-func ConnectDatabase() {
+func ConnectDatabase() error {
 	dsn := "user:secret@tcp(127.0.0.1:3307)/main?charset=utf8mb4&parseTime=true"
 	database, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		panic("Failed to connect to database!")
+		return err
 	}
 
 	err = database.AutoMigrate(&User{})
 	if err != nil {
-		return
+		return err
 	}
 
 	DB = database
+
+	return nil
 }
