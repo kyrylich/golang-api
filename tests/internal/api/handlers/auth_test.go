@@ -8,20 +8,21 @@ import (
 	"testing"
 )
 
-const path = "/api/auth/sign-up"
+const signUpPath = "/api/auth/sign-up"
+const signInPath = "/api/auth/sign-in"
 
 func TestSignUpShouldRegisterUserSuccessfully(t *testing.T) {
 	// Arrange
 	e, serverClose := util.SetupApi(t)
 	defer serverClose()
 
-	json := input.SignInUserInput{
+	json := input.SignUpUserInput{
 		Username: "test12341234124124252513525",
 		Password: "SuperSecurePass1234",
 	}
 
 	// Act
-	result := e.POST(path).
+	result := e.POST(signUpPath).
 		WithJSON(json).
 		Expect().
 		Status(http.StatusCreated).JSON().Object()
@@ -35,7 +36,7 @@ func TestSignUpWithDuplicatedUserShouldReturnBadRequest(t *testing.T) {
 	e, serverClose := util.SetupApi(t)
 	defer serverClose()
 
-	json := input.SignInUserInput{
+	json := input.SignUpUserInput{
 		Username: "TestUser",
 		Password: "SuperSecurePass1234",
 	}
@@ -43,7 +44,7 @@ func TestSignUpWithDuplicatedUserShouldReturnBadRequest(t *testing.T) {
 	util.CreateUser(nil)
 
 	// Act
-	result := e.POST(path).
+	result := e.POST(signUpPath).
 		WithJSON(json).
 		Expect().
 		Status(http.StatusBadRequest).JSON().Object()
@@ -67,13 +68,13 @@ func TestSignUpInputValidationShouldReturnErrors(t *testing.T) {
 	e, serverClose := util.SetupApi(t)
 	defer serverClose()
 
-	json := input.SignInUserInput{
+	json := input.SignUpUserInput{
 		Username: "1",
 		Password: "1",
 	}
 
 	// Act
-	result := e.POST(path).
+	result := e.POST(signUpPath).
 		WithJSON(json).
 		Expect().
 		Status(http.StatusBadRequest).JSON().Object()
@@ -100,5 +101,129 @@ func TestSignUpInputValidationShouldReturnErrors(t *testing.T) {
 }
 
 func TestSignInShouldReturnAuthToken(t *testing.T) {
+	// Arrange
+	e, serverClose := util.SetupApi(t)
+	defer serverClose()
 
+	json := input.SignInUserInput{
+		Username: "TestUser",
+		Password: "SuperSecurePass1234",
+	}
+
+	util.CreateUser(nil)
+
+	// Act
+	result := e.POST(signInPath).
+		WithJSON(json).
+		Expect().
+		Status(http.StatusOK).JSON().Object()
+
+	// Assert
+	result.Value("token").IsString()
+}
+
+func TestSignInWithNonExistedUserShouldReturnError(t *testing.T) {
+	// Arrange
+	e, serverClose := util.SetupApi(t)
+	defer serverClose()
+
+	json := input.SignInUserInput{
+		Username: "TestUser",
+		Password: "SuperSecurePass1234",
+	}
+
+	// Act
+	result := e.POST(signInPath).
+		WithJSON(json).
+		Expect().
+		Status(http.StatusBadRequest).JSON().Object()
+
+	// Assert
+	result.
+		Value("errors").
+		Array().
+		Value(0).
+		Object().
+		Value("message").
+		IsEqual("Incorrect username or password")
+}
+
+func TestSignInIncorrectPasswordShouldReturnError(t *testing.T) {
+	// Arrange
+	e, serverClose := util.SetupApi(t)
+	defer serverClose()
+
+	json := input.SignInUserInput{
+		Username: "TestUser",
+		Password: "this password is not mine",
+	}
+
+	util.CreateUser(nil)
+
+	// Act
+	result := e.POST(signInPath).
+		WithJSON(json).
+		Expect().
+		Status(http.StatusBadRequest).JSON().Object()
+
+	// Assert
+	result.
+		Value("errors").
+		Array().
+		Value(0).
+		Object().
+		Value("message").
+		IsEqual("Incorrect username or password")
+}
+
+func TestSignInWithEmptyUsernameShouldReturnError(t *testing.T) {
+	// Arrange
+	e, serverClose := util.SetupApi(t)
+	defer serverClose()
+
+	json := input.SignInUserInput{
+		Username: "",
+		Password: "SuperSecurePass1234",
+	}
+
+	// Act
+	result := e.POST(signInPath).
+		WithJSON(json).
+		Expect().
+		Status(http.StatusBadRequest).JSON().Object()
+
+	// Assert
+	result.
+		Value("errors").
+		Array().
+		Value(0).
+		Object().
+		Value("message").
+		IsEqual("Username is a required field")
+}
+
+func TestSignInWithEmptyPasswordShouldReturnError(t *testing.T) {
+	// Arrange
+	e, serverClose := util.SetupApi(t)
+	defer serverClose()
+
+	json := input.SignInUserInput{
+		Username: "TestUser",
+		Password: "",
+	}
+
+	// Act
+	result := e.POST(signInPath).
+		WithJSON(json).
+		Expect().
+		Status(http.StatusBadRequest).JSON().Object()
+
+	// Assert
+	result.
+		Value("errors").
+		Array().
+		Value(0).
+		Object().
+		Value("message").
+		IsEqual("Password is a required field")
 }
