@@ -98,3 +98,7 @@ func TestSignUpInputValidationShouldReturnErrors(t *testing.T) {
 		Value("message").
 		IsEqual("Password must be at least 8 characters in length")
 }
+
+func TestSignInShouldReturnAuthToken(t *testing.T) {
+
+}
