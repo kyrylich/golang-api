@@ -12,3 +12,14 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: secret
       MYSQL_RANDOM_ROOT_PASSWORD: 1
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    restart: on-failure
+    environment:
+      GIN_MODE: release
+      DATABASE_DSN: "user:secret@tcp(database:3306)/main?charset=utf8mb4&parseTime=true"

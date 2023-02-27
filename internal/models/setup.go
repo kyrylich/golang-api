@@ -1,15 +1,15 @@
 package models
 
 import (
+	"golangpet/internal/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
-func ConnectDatabase() error {
-	dsn := "user:secret@tcp(127.0.0.1:3307)/main?charset=utf8mb4&parseTime=true"
-	database, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+func ConnectDatabase(config *config.DatabaseConfig) error {
+	database, err := gorm.Open(mysql.Open(config.DSN), &gorm.Config{})
 
 	if err != nil {
 		return err

@@ -27,7 +27,14 @@ func (a *App) Run() error {
 }
 
 func (a *App) Boot() error {
-	if err := models.ConnectDatabase(); err != nil {
+	cfg, err := config.InitConfiguration()
+	if err != nil {
+		return err
+	}
+
+	a.Config = cfg
+
+	if err := models.ConnectDatabase(&cfg.Database); err != nil {
 		return err
 	}
 
@@ -36,13 +43,6 @@ func (a *App) Boot() error {
 	if err := translation.RegisterValidationTranslations(); err != nil {
 		return err
 	}
-
-	cfg, err := config.InitConfiguration()
-	if err != nil {
-		return err
-	}
-
-	a.Config = cfg
 
 	return nil
 }

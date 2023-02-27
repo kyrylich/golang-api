@@ -10,10 +10,6 @@ import (
 const securityKey = "security"
 const signingKeyKey = "signingKey"
 
-// TODO: Do binding for Database variables
-// TODO: Add support of test and dev envs
-// TODO: Refactor database connection via viper
-
 type DatabaseConfig struct {
 	Driver string `mapstructure:"driver"`
 	DSN    string `mapstructure:"dsn"`
