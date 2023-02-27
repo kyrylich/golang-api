@@ -10,6 +10,7 @@ import (
 
 const signUpPath = "/api/auth/sign-up"
 const signInPath = "/api/auth/sign-in"
+const getCurrentUserPath = "/api/auth/get-current-user"
 
 func TestSignUpShouldRegisterUserSuccessfully(t *testing.T) {
 	// Arrange
@@ -226,4 +227,58 @@ func TestSignInWithEmptyPasswordShouldReturnError(t *testing.T) {
 		Object().
 		Value("message").
 		IsEqual("Password is a required field")
+}
+
+func TestGetCurrentUserShouldReturnUserAssociatedWithThisToken(t *testing.T) {
+	// Arrange
+	e, serverClose := util.SetupApi(t)
+	defer serverClose()
+
+	json := input.SignInUserInput{
+		Username: "TestUser",
+		Password: "SuperSecurePass1234",
+	}
+
+	util.CreateUser(nil)
+
+	token := e.POST(signInPath).
+		WithJSON(json).
+		Expect().
+		Status(http.StatusOK).
+		JSON().
+		Object().
+		Raw()["token"]
+
+	// Act
+	result := e.GET(getCurrentUserPath).
+		WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)).
+		Expect().
+		Status(http.StatusOK).
+		JSON().
+		Object()
+
+	result.Value("username").IsEqual(json.Username)
+}
+
+func TestGetCurrentUserWithoutAuthHeaderShouldReturnStatusUnauthorized(t *testing.T) {
+	// Arrange
+	e, serverClose := util.SetupApi(t)
+	defer serverClose()
+
+	// Act
+	e.GET(getCurrentUserPath).
+		Expect().
+		Status(http.StatusUnauthorized)
+}
+
+func TestGetCurrentUserWithEmptyTokenShouldReturnStatusUnauthorized(t *testing.T) {
+	// Arrange
+	e, serverClose := util.SetupApi(t)
+	defer serverClose()
+
+	// Act
+	e.GET(getCurrentUserPath).
+		WithHeader("Authorization", "Bearer ").
+		Expect().
+		Status(http.StatusUnauthorized)
 }
