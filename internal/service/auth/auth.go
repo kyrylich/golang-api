@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"golangpet/internal/config"
+	"golangpet/internal/database/reader"
+	"golangpet/internal/database/writer"
 	"golangpet/internal/dto/input"
 	"golangpet/internal/dto/output"
-	"golangpet/internal/models"
-	"golangpet/internal/models/writer"
 	"golangpet/internal/security"
 	"net/http"
 	"time"
@@ -26,23 +26,18 @@ type AuthServiceInterface interface {
 type AuthService struct {
 	passwordHasher security.PasswordHasherInterface
 	userWriter     writer.UserWriterInterface
+	userReader     reader.UserReaderInterface
 }
 
-func NewAuthService(passwordHasher security.PasswordHasherInterface, userWriter writer.UserWriterInterface) AuthServiceInterface {
-	if passwordHasher == nil {
-		passwordHasher = security.BcryptPasswordHasher{}
-	}
-	if userWriter == nil {
-		userWriter = writer.NewUserWriter(models.DB)
-	}
-
-	return &AuthService{passwordHasher: passwordHasher, userWriter: userWriter}
+func NewAuthService(
+	passwordHasher security.PasswordHasherInterface,
+	userWriter writer.UserWriterInterface,
+	userReader reader.UserReaderInterface) AuthServiceInterface {
+	return &AuthService{passwordHasher: passwordHasher, userWriter: userWriter, userReader: userReader}
 }
 
 func (a *AuthService) SignIn(input input.SignInUserInput) (*output.SignInUserOutput, *output.ErrorResponse) {
-	user := &models.User{Username: input.Username}
-
-	models.DB.First(user, user)
+	user := a.userReader.GetByUsername(input.Username)
 
 	if user == nil || !a.passwordHasher.Verify(input.Password, user.Password) {
 		errResponse := output.NewErrorResponse(http.StatusBadRequest)

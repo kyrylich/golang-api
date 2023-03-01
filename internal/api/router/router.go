@@ -2,16 +2,18 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"golangpet/internal/api/handlers"
-	"golangpet/internal/api/middlewares"
+	"golangpet/internal/api/middleware"
+	"golangpet/internal/factory"
 )
 
-func CreateRouter() *gin.Engine {
+func CreateRouter(factory *factory.DependencyFactory) *gin.Engine {
 	r := gin.Default()
 
-	r.POST("/api/auth/sign-up", handlers.SignUp)
-	r.POST("/api/auth/sign-in", handlers.SignIn)
-	r.GET("/api/auth/get-current-user", middlewares.EnsureAuthorized, handlers.GetCurrentUser)
+	authHandler := factory.CreateAuthHandler()
+
+	r.POST("/api/auth/sign-up", authHandler.SignUp)
+	r.POST("/api/auth/sign-in", authHandler.SignIn)
+	r.GET("/api/auth/get-current-user", middleware.EnsureAuthorized, authHandler.GetCurrentUser)
 
 	return r
 }

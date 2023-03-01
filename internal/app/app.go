@@ -4,18 +4,31 @@ import (
 	"github.com/gin-gonic/gin"
 	"golangpet/internal/api/router"
 	"golangpet/internal/config"
-	"golangpet/internal/models"
+	factory "golangpet/internal/factory"
+	"golangpet/internal/model"
 	"golangpet/internal/translation"
+	"gorm.io/gorm"
 )
 
 type AppInterface interface {
 	Run() error
 	Boot() error
+	GetConfig() *config.Config
+	GetDB() *gorm.DB
 }
 
 type App struct {
 	router *gin.Engine
-	Config *config.Config
+	config *config.Config
+	db     *gorm.DB
+}
+
+func (a *App) GetConfig() *config.Config {
+	return a.config
+}
+
+func (a *App) GetDB() *gorm.DB {
+	return a.db
 }
 
 func (a *App) Run() error {
@@ -32,15 +45,18 @@ func (a *App) Boot() error {
 		return err
 	}
 
-	a.Config = cfg
+	a.config = cfg
 
-	if err := models.ConnectDatabase(&cfg.Database); err != nil {
+	db, err := model.ConnectDatabase(&cfg.Database)
+	if err != nil {
 		return err
 	}
+	depFactory := factory.NewDependencyFactory(db)
 
-	a.router = router.CreateRouter()
+	a.db = db
+	a.router = router.CreateRouter(depFactory)
 
-	if err := translation.RegisterValidationTranslations(); err != nil {
+	if err = translation.RegisterValidationTranslations(); err != nil {
 		return err
 	}
 

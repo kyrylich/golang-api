@@ -3,7 +3,7 @@ package writer
 import (
 	"golangpet/internal/dto/input"
 	"golangpet/internal/dto/output"
-	"golangpet/internal/models"
+	"golangpet/internal/model"
 	"gorm.io/gorm"
 )
 
@@ -20,9 +20,9 @@ type UserWriter struct {
 }
 
 func (u *UserWriter) Create(input input.SignUpUserInput) (output.SignUpUserOutput, *gorm.DB) {
-	user := models.User{Username: input.Username, Password: input.Password}
+	user := model.User{Username: input.Username, Password: input.Password}
 
-	db := models.DB.FirstOrCreate(&user, models.User{Username: input.Username})
+	db := u.db.FirstOrCreate(&user, model.User{Username: input.Username})
 
 	return output.SignUpUserOutput{Username: user.Username, CreatedAt: user.CreatedAt}, db
 }

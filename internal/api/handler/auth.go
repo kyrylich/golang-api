@@ -1,21 +1,36 @@
-package handlers
+package handler
 
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"golangpet/internal/api/middlewares"
+	"golangpet/internal/api/middleware"
+	"golangpet/internal/database/reader"
 	"golangpet/internal/dto/input"
 	"golangpet/internal/dto/output"
-	"golangpet/internal/models"
-	"golangpet/internal/models/reader"
+	"golangpet/internal/mapper"
 	"golangpet/internal/service/auth"
 	"golangpet/internal/translation"
 	"golangpet/internal/validation"
 	"net/http"
 )
 
-func GetCurrentUser(c *gin.Context) {
-	username, ok := c.Get(middlewares.GinContextCurrentUsername)
+type AuthHandlerInterface interface {
+	GetCurrentUser(c *gin.Context)
+	SignIn(c *gin.Context)
+	SignUp(c *gin.Context)
+}
+
+type AuthHandler struct {
+	userReader  reader.UserReaderInterface
+	authService auth.AuthServiceInterface
+}
+
+func NewAuthHandler(userReader reader.UserReaderInterface, authService auth.AuthServiceInterface) AuthHandlerInterface {
+	return &AuthHandler{userReader: userReader, authService: authService}
+}
+
+func (a AuthHandler) GetCurrentUser(c *gin.Context) {
+	username, ok := c.Get(middleware.GinContextCurrentUsername)
 	if !ok {
 		errResponse := output.NewErrorResponse(http.StatusNotFound)
 		errResponse.AddError("", "User associated with token not found")
@@ -23,8 +38,7 @@ func GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	userReader := reader.NewUserReader(models.DB)
-	userOutput := userReader.GetByUsername(fmt.Sprintf("%s", username))
+	userOutput := mapper.MapUserModelToUserOutput(a.userReader.GetByUsername(fmt.Sprintf("%s", username)))
 
 	if userOutput == nil {
 		errResponse := output.NewErrorResponse(http.StatusNotFound)
@@ -36,7 +50,7 @@ func GetCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, userOutput)
 }
 
-func SignIn(c *gin.Context) {
+func (a AuthHandler) SignIn(c *gin.Context) {
 	var userInput input.SignInUserInput
 
 	if validationErr := c.ShouldBindJSON(&userInput); validationErr != nil {
@@ -44,9 +58,7 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	var authService = auth.NewAuthService(nil, nil)
-
-	model, errorResponse := authService.SignIn(userInput)
+	model, errorResponse := a.authService.SignIn(userInput)
 	if errorResponse != nil {
 		c.AbortWithStatusJSON(errorResponse.Code, errorResponse)
 		return
@@ -55,16 +67,15 @@ func SignIn(c *gin.Context) {
 	c.JSON(http.StatusOK, model)
 }
 
-func SignUp(c *gin.Context) {
+func (a AuthHandler) SignUp(c *gin.Context) {
 	var userInput input.SignUpUserInput
 
 	if validationErr := c.ShouldBindJSON(&userInput); validationErr != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, validation.CreateValidationResponse(translation.Translator, validationErr))
 		return
 	}
-	var authService = auth.NewAuthService(nil, nil)
 
-	model, errorResponse := authService.SignUp(userInput)
+	model, errorResponse := a.authService.SignUp(userInput)
 	if errorResponse != nil {
 		c.AbortWithStatusJSON(errorResponse.Code, errorResponse)
 		return

@@ -1,8 +1,8 @@
-package middlewares
+package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"golangpet/internal/app_errors"
+	"golangpet/internal/app_error"
 	"golangpet/internal/config"
 	"golangpet/internal/service/auth"
 	"net/http"
@@ -35,7 +35,7 @@ func EnsureAuthorized(c *gin.Context) {
 	username, err := auth.ParseToken(headerParts[1], config.GetSigningKey())
 	if err != nil {
 		status := http.StatusBadRequest
-		if err == app_errors.ErrorInvalidAccessToken {
+		if err == app_error.ErrorInvalidAccessToken {
 			status = http.StatusUnauthorized
 		}
 		c.AbortWithStatusJSON(status, err.Error())

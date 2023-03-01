@@ -2,13 +2,17 @@ package util
 
 import (
 	"fmt"
-	"golangpet/internal/models"
+	"golangpet/internal/model"
 	"golangpet/internal/security"
 	"gorm.io/gorm"
 	"log"
 )
 
+var database *gorm.DB
+
 func CleanUpDatabase(db *gorm.DB) {
+	database = db
+
 	tables, err := db.Migrator().GetTables()
 	if err != nil {
 		log.Fatal(err)
@@ -26,13 +30,13 @@ func CleanUpDatabase(db *gorm.DB) {
 	return
 }
 
-func CreateUser(user *models.User) *models.User {
+func CreateUser(user *model.User) *model.User {
 	hasher := security.BcryptPasswordHasher{}
 	pass, _ := hasher.Hash("SuperSecurePass1234")
 	if user == nil {
-		user = &models.User{Username: "TestUser", Password: pass}
+		user = &model.User{Username: "TestUser", Password: pass}
 	}
-	models.DB.Create(user)
+	database.Create(user)
 
 	return user
 }

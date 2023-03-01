@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
-	"golangpet/internal/app_errors"
+	"golangpet/internal/app_error"
 )
 
 func ParseToken(accessToken string, signingKey []byte) (string, error) {
@@ -22,5 +22,5 @@ func ParseToken(accessToken string, signingKey []byte) (string, error) {
 		return claims.Username, nil
 	}
 
-	return "", app_errors.ErrorInvalidAccessToken
+	return "", app_error.ErrorInvalidAccessToken
 }

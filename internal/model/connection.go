@@ -1,4 +1,4 @@
-package models
+package model
 
 import (
 	"golangpet/internal/config"
@@ -6,21 +6,25 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+var db *gorm.DB
 
-func ConnectDatabase(config *config.DatabaseConfig) error {
+func ConnectDatabase(config *config.DatabaseConfig) (*gorm.DB, error) {
+	if db != nil {
+		return db, nil
+	}
+
 	database, err := gorm.Open(mysql.Open(config.DSN), &gorm.Config{})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = database.AutoMigrate(&User{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	DB = database
+	db = database
 
-	return nil
+	return database, nil
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	application := new(app.App)
+	application := &app.App{}
 	if err := application.Run(); err != nil {
 		log.Fatal(err)
 	}
