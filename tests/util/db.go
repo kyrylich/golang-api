@@ -24,10 +24,10 @@ func CleanUpDatabase(db *gorm.DB) {
 	}
 
 	for _, table := range tables {
-		sql.Exec(fmt.Sprintf("TRUNCATE TABLE %s", table))
+		if _, err = sql.Exec(fmt.Sprintf("TRUNCATE TABLE %s", table)); err != nil {
+			return
+		}
 	}
-
-	return
 }
 
 func CreateUser(user *model.User) *model.User {
